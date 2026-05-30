@@ -14,8 +14,8 @@ export default function Home() {
           </span>
         </div>
         <Link
-          href="/dashboard"
-          className="text-sm text-slate-500 hover:text-blue-600 transition-colors"
+          href="/sign-in"
+          className="text-sm text-slate-400 hover:text-blue-600 transition-colors"
         >
           Área do médico →
         </Link>
@@ -36,21 +36,12 @@ export default function Home() {
           tudo online em poucos cliques.
         </p>
 
-        {/* Botões */}
-        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-sm">
-          <Link
-            href="/agendamento"
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl text-center transition-colors shadow-md shadow-blue-100"
-          >
-            Agendar Consulta
-          </Link>
-          <Link
-            href="/dashboard"
-            className="flex-1 bg-white hover:bg-slate-100 text-slate-700 font-semibold py-4 px-6 rounded-xl text-center border border-slate-200 transition-colors"
-          >
-            Sou Médico
-          </Link>
-        </div>
+        <Link
+          href="/agendamento"
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-10 rounded-xl text-center transition-colors shadow-md shadow-blue-100"
+        >
+          Agendar Consulta
+        </Link>
       </section>
 
       {/* Info cards */}

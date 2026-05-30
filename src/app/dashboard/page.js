@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useAuth, UserButton } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 const statusStyle = {
   confirmada: "bg-emerald-50 text-emerald-600 border border-emerald-100",
@@ -16,14 +18,26 @@ const statusLabel = {
 };
 
 export default function Dashboard() {
+  const { isLoaded, isSignedIn } = useAuth();
+  const router = useRouter();
+
   const [consultas, setConsultas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
   const [filtro, setFiltro] = useState("todas");
 
+  // Redireciona para login se não autenticado
   useEffect(() => {
-    buscarAgendamentos();
-  }, []);
+    if (isLoaded && !isSignedIn) {
+      router.push("/sign-in");
+    }
+  }, [isLoaded, isSignedIn, router]);
+
+  useEffect(() => {
+    if (isSignedIn) {
+      buscarAgendamentos();
+    }
+  }, [isSignedIn]);
 
   async function buscarAgendamentos() {
     try {
@@ -60,7 +74,6 @@ export default function Dashboard() {
         return;
       }
 
-      // Atualiza o estado local sem precisar recarregar tudo
       setConsultas((prev) =>
         prev.map((c) => (c.id === id ? { ...c, status: novoStatus } : c))
       );
@@ -77,11 +90,20 @@ export default function Dashboard() {
   });
 
   const stats = [
-    { label: "Consultas hoje",    valor: consultas.length,                                              icon: "📅", cor: "bg-blue-50 text-blue-600"   },
-    { label: "Próximas consultas", valor: consultas.filter((c) => c.status !== "cancelada").length,     icon: "🗓️", cor: "bg-violet-50 text-violet-600" },
-    { label: "Pendentes",         valor: consultas.filter((c) => c.status === "pendente").length,       icon: "🕐", cor: "bg-emerald-50 text-emerald-600"},
-    { label: "Total de pacientes", valor: [...new Set(consultas.map((c) => c.email))].length,           icon: "👤", cor: "bg-amber-50 text-amber-600"   },
+    { label: "Consultas hoje",     valor: consultas.length,                                            icon: "📅", cor: "bg-blue-50 text-blue-600"    },
+    { label: "Próximas consultas", valor: consultas.filter((c) => c.status !== "cancelada").length,    icon: "🗓️", cor: "bg-violet-50 text-violet-600" },
+    { label: "Pendentes",          valor: consultas.filter((c) => c.status === "pendente").length,     icon: "🕐", cor: "bg-emerald-50 text-emerald-600"},
+    { label: "Total de pacientes", valor: [...new Set(consultas.map((c) => c.email))].length,          icon: "👤", cor: "bg-amber-50 text-amber-600"   },
   ];
+
+  // Tela de carregamento enquanto Clerk verifica autenticação
+  if (!isLoaded || !isSignedIn) {
+    return (
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <p className="text-slate-400 text-sm">Verificando acesso...</p>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-slate-50 flex flex-col">
@@ -103,9 +125,8 @@ export default function Dashboard() {
           >
             ↻ Atualizar
           </button>
-          <Link href="/" className="text-sm text-slate-500 hover:text-blue-600 transition-colors">
-            ← Sair
-          </Link>
+          {/* Botão de perfil/logout do Clerk */}
+          <UserButton afterSignOutUrl="/" />
         </div>
       </header>
 
@@ -128,8 +149,6 @@ export default function Dashboard() {
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 sm:p-8">
           <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
             <h2 className="text-lg font-bold text-slate-800">Agenda de hoje</h2>
-
-            {/* Filtros */}
             <div className="flex gap-2 text-xs font-medium">
               {["todas", "confirmada", "pendente", "cancelada"].map((f) => (
                 <button
@@ -147,15 +166,12 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Estados */}
           {carregando && (
             <p className="text-slate-400 text-sm text-center py-8">Carregando consultas...</p>
           )}
-
           {!carregando && erro && (
             <p className="text-red-400 text-sm text-center py-8">{erro}</p>
           )}
-
           {!carregando && !erro && consultasFiltradas.length === 0 && (
             <p className="text-slate-400 text-sm text-center py-8">Nenhuma consulta encontrada.</p>
           )}
@@ -167,7 +183,6 @@ export default function Dashboard() {
                   key={c.id}
                   className="flex items-center justify-between gap-4 p-4 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors"
                 >
-                  {/* Horário */}
                   <div className="min-w-[48px] text-center">
                     <p className="text-sm font-bold text-blue-600">
                       {new Date(c.dataHora).toLocaleTimeString("pt-BR", {
@@ -178,18 +193,15 @@ export default function Dashboard() {
 
                   <div className="w-px h-8 bg-slate-100" />
 
-                  {/* Info */}
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-slate-800">{c.nome}</p>
                     <p className="text-xs text-slate-400 mt-0.5">{c.motivo || "Sem motivo informado"}</p>
                   </div>
 
-                  {/* Status */}
                   <span className={`text-xs font-medium px-3 py-1 rounded-full ${statusStyle[c.status]}`}>
                     {statusLabel[c.status]}
                   </span>
 
-                  {/* Ações */}
                   <div className="flex gap-3">
                     {c.status === "pendente" && (
                       <button
@@ -215,7 +227,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Footer */}
       <footer className="text-center pb-8 text-slate-400 text-xs mt-auto">
         © {new Date().getFullYear()} Dr. Rafael Rocha Milani — Sistema de Agendamento
       </footer>
